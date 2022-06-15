@@ -1,6 +1,6 @@
 use std::fmt;
+use std::slice::Iter;
 
-#[derive(Debug)]
 enum MenuAction {
     List,
     Create,
@@ -9,37 +9,58 @@ enum MenuAction {
     ListAll,
 }
 
-/*
-============= There is no generic field all MenuActions share... That's why it's not working
- */
+struct MenuItem {
+    action: MenuAction,
+    name: &'static str,
+    selection: u8,
+}
 
-impl MenuAction {
-    pub fn parse_user_selection(input: &str) -> Result<MenuAction, &str> {
+impl MenuItem {
+    pub fn parse_user_selection(input: &str) -> Result<&MenuItem, &str> {
         let input: u8 = input.trim().parse().expect("Please enter a number.");
 
-        match input {
-            0 => Ok(MenuAction::List),
-            1 => Ok(MenuAction::Create),
-            2 => Ok(MenuAction::Delete),
-            3 => Ok(MenuAction::History),
-            4 => Ok(MenuAction::ListAll),
-            _ => Err("Please select a valid action.")
+        match MenuItem::iterator()
+            .find(|menu_item| menu_item.selection == input) {
+            Some(item) => Ok(item),
+            None => Err("Please select a valid action.")
         }
+    }
+
+    pub fn iterator() -> Iter<'static, MenuItem> {
+        static MENU_ITEMS: [MenuItem; 5] = [
+            MenuItem {
+                action: MenuAction::List,
+                name: &"List",
+                selection: 0,
+            },
+            MenuItem {
+                action: MenuAction::Create,
+                name: &"Create",
+                selection: 1,
+            },
+            MenuItem {
+                action: MenuAction::Delete,
+                name: &"Delete",
+                selection: 2,
+            },
+            MenuItem {
+                action: MenuAction::History,
+                name: &"History",
+                selection: 3,
+            },
+            MenuItem {
+                action: MenuAction::ListAll,
+                name: &"ListAll",
+                selection: 4,
+            }];
+        MENU_ITEMS.iter()
     }
 }
 
-impl fmt::Display for MenuAction {
+impl fmt::Display for MenuItem {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
 
-        let val = match self {
-            MenuAction::List => (0, "List"),
-            MenuAction::Create => (1, "Create"),
-            MenuAction::Delete => (2, "Delete"),
-            MenuAction::History => (3, "History"),
-            MenuAction::ListAll => (4, "ListAll")
-        };
-
-        write!(f, "{}: {}", val.0, val.1)
+        write!(f, "{}: {}", self.selection, self.name)
     }
 }
 
@@ -60,10 +81,5 @@ pub fn run() {
 
 fn print_menu() {
     println!("Please select an action:");
-    println!("{}", MenuAction::List);
-    println!("{}", MenuAction::Create);
-    println!("{}", MenuAction::Delete);
-    println!("{}", MenuAction::History);
-    println!("{}", MenuAction::ListAll);
-    // MenuAction::iterator().for_each(|action| println!("{}", action));
+    MenuItem::iterator().for_each(|action| println!("{}", action));
 }
