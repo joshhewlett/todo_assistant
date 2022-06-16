@@ -4,20 +4,16 @@ use std::fmt;
 #[derive(Debug)]
 pub struct TodoError {
     message: String,
-    source: Option<Box<dyn Error + 'static>>
+    source: Option<Box<dyn Error>>
 }
 
 impl TodoError {
 
-    pub fn new(message: String, source: Option<Box<(dyn Error + 'static)>>) -> TodoError {
+    pub fn new(message: String, source: Box<(dyn Error)>) -> TodoError {
 
         TodoError {
             message,
-            source
-            // source: match source {
-            //     None => None,
-            //     Some(err) => Some(Box::new(err))
-            // }
+            source: Some(source)
         }
     }
 
@@ -28,18 +24,14 @@ impl TodoError {
             source: Option::None
         }
     }
-}
 
-impl Error for TodoError {
+    pub fn root(&self) -> &Option<Box<dyn Error>> {
 
-    fn source(&self) -> Option<&(dyn Error + 'static)> {
-
-        match &self.source {
-            None => None,
-            Some(err) => Some(err.source().unwrap())
-        }
+        &self.source
     }
 }
+
+impl Error for TodoError {}
 
 impl fmt::Display for TodoError {
 

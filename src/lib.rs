@@ -7,7 +7,7 @@ use std::num::ParseIntError;
 use std::slice::Iter;
 
 use error::todo_error::TodoError;
-
+// use crate::error::todo_error::TodoError;
 
 enum MenuAction {
     List,
@@ -25,9 +25,11 @@ struct MenuItem {
 }
 
 impl MenuItem {
-    pub fn parse_user_selection(input: &str) -> Result<&MenuItem, TodoError> {
+    pub fn parse_user_selection(input: &String) -> Result<&'static MenuItem, TodoError> {
         let input: u8 = input.trim().parse::<u8>()
-            .map_err(|_| TodoError::new_from_msg(String::from("Selection must be a number.")))?;
+            .map_err(|err| TodoError::new(
+                String::from("Selection must be a number."),
+                Box::new(err)))?;
 
         MenuItem::iterator()
             .find(|menu_item| menu_item.selection == input)
@@ -87,13 +89,8 @@ pub fn run() -> Result<(), Box<TodoError>> {
 
     print_menu();
 
-    //
-    let mut user_selection = String::new();
-    io::stdin().read_line(&mut user_selection)
-        // .map_err(|_| Err(String::from("Failed to read line.")))?;
-        .map_err(|_| TodoError::new_from_msg(String::from("Failed to read line.")))?;
+    let menu_item_selection = get_menu_action()?;
 
-    let menu_item_selection = MenuItem::parse_user_selection(user_selection.as_str())?;
     match menu_item_selection.action {
         MenuAction::List => {}
         MenuAction::Create => {}
@@ -108,9 +105,15 @@ pub fn run() -> Result<(), Box<TodoError>> {
     Ok(())
 }
 
-// fn get_menu_action() -> MenuAction {
-//     print_menu();
-// }
+fn get_menu_action() -> Result<&'static MenuItem, TodoError> {
+    let mut user_selection = String::new();
+    io::stdin().read_line(&mut user_selection)
+        .map_err(|err| TodoError::new(
+            String::from("Failed to read line."),
+            Box::new(err)))?;
+
+    MenuItem::parse_user_selection(&user_selection)
+}
 
 fn print_menu() {
     println!("Please select an action:");
