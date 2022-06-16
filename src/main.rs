@@ -1,6 +1,7 @@
 extern crate core;
 
 mod todo;
+mod error;
 
 use todo::{todo_store::TodoStore, todo_item::TodoItem};
 
@@ -20,6 +21,11 @@ fn main() {
     // println!("========");
     // todo_store.list_all_todos();
 
-    todo_assistant::run();
+    loop {
+        println!();
+        if let Err(e) = todo_assistant::run() {
+            eprintln!("Error: {}", e);
+        }
+    }
 }
 
