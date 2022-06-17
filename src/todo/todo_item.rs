@@ -1,14 +1,16 @@
 use std::fmt;
 use chrono::{NaiveDate, format::ParseError, ParseResult};
 
+// TODO: Maybe add date_completed
 #[derive(Debug)]
 pub struct TodoItem {
-    title: String,
-    due_date: NaiveDate,
+    pub title: String,
+    pub due_date: NaiveDate,
     pub complete: bool,
 }
 
 impl TodoItem {
+    // TODO: Return Result<TodoItem, TodoError>
     pub fn new(title: String, due_date: String) -> TodoItem {
         let due_date = match NaiveDate::parse_from_str(&due_date, "%Y-%m-%d") {
             Ok(result) => result,
@@ -32,17 +34,12 @@ impl TodoItem {
 }
 
 impl fmt::Display for TodoItem {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let is_done_indicator = match self.complete {
-            true => String::from("[X]"),
-            false => String::from("[ ]")
+            true => String::from("X"),
+            false => String::from(" ")
         };
 
-        write!(
-            f,
-            "{is_done_indicator} {title}\nDue: {date}\n",
-            title = self.title,
-            date = self.due_date
-        )
+        write!(f, "| {} | {} | {}", is_done_indicator, self.due_date, self.title)
     }
 }

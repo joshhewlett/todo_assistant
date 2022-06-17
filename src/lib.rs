@@ -1,13 +1,17 @@
-mod error;
-
-use std::{fmt, io};
+use std::{fmt, io, process};
 use std::error::Error;
 use std::fmt::Pointer;
 use std::num::ParseIntError;
 use std::slice::Iter;
 
+mod error;
+
 use error::todo_error::TodoError;
 // use crate::error::todo_error::TodoError;
+
+mod todo;
+
+use todo::todo_store::TodoStore;
 
 enum MenuAction {
     List,
@@ -87,20 +91,26 @@ pub fn run() -> Result<(), Box<TodoError>> {
     // Write data to file for each update
     // get_menu_action();
 
+    let store = TodoStore::new()?;
+
     print_menu();
 
     let menu_item_selection = get_menu_action()?;
+    // println!("Selected: {}", menu_item_selection.name);
 
     match menu_item_selection.action {
-        MenuAction::List => {}
+        MenuAction::List => { store.list_incomplete_todos(); }
         MenuAction::Create => {}
         MenuAction::Delete => {}
-        MenuAction::History => {}
-        MenuAction::ListAll => {}
-        MenuAction::Quit => {}
+        MenuAction::History => { store.list_history(); }
+        MenuAction::ListAll => { store.list_all_todos(); }
+        MenuAction::Quit => {
+            // TODO: Save state
+            println!("Goodbye.");
+            process::exit(0);
+        }
     }
 
-    println!("Selected: {}", menu_item_selection.name);
 
     Ok(())
 }
