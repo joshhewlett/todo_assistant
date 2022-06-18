@@ -1,8 +1,10 @@
 use std::collections::HashMap;
+use std::io;
 
 use crate::todo::todo_item::TodoItem;
 use crate::error::todo_error::TodoError;
 
+#[derive(Debug)]
 pub struct TodoStore {
     store: Vec<TodoItem>,
     longest_title: usize,
@@ -10,31 +12,29 @@ pub struct TodoStore {
 
 impl TodoStore {
     pub fn new() -> Result<TodoStore, TodoError> {
-        let mut store = vec![
-            TodoItem::new(String::from("Todo Number 2"), String::from("2022-02-02")),
-            TodoItem::new(String::from("Todo Number 1"), String::from("2022-02-01")),
-            TodoItem::new(String::from("Todo Number 3"), String::from("2022-02-03"))];
-
-        let mut longest_title: usize = 0;
-        store.iter().for_each(|item| if item.title.len() > longest_title {
-            longest_title = item.title.len()
-        });
 
         let mut result = TodoStore {
-            store,
-            longest_title,
+            store: Vec::new(),
+            longest_title: 0,
         };
         result.sort_store();
-
-        result.mark_as_done(1);
 
         Ok(result)
     }
 
-    // TODO: Accept user input and pass into TodoItem::new
-    pub fn create_new_todo(&mut self, new_item: TodoItem) {
-        self.store.push(new_item);
+    pub fn create_new_todo(&mut self) -> Result<(), TodoError> {
+        println!("Enter a new Todo Item:");
+        println!("Format: 'YYYY-MM-DD {{Title}}");
+
+        let mut new_todo = String::new();
+        io::stdin().read_line(&mut new_todo)
+            .map_err(|err| TodoError::new(
+                String::from("Failed to read line."),
+                Box::new(err)))?;
+
+        self.add_item(TodoItem::new(new_todo)?);
         self.sort_store();
+        Ok(())
     }
 
     pub fn mark_as_done(&mut self, index: usize) {
@@ -51,6 +51,13 @@ impl TodoStore {
 
     pub fn list_history(&self) {
         self.print_store(|item: &&TodoItem| item.complete);
+    }
+
+    fn add_item(&mut self, new_item: TodoItem) {
+        if new_item.title.len() > self.longest_title {
+            self.longest_title = new_item.title.len();
+        }
+        self.store.push(new_item);
     }
 
     fn sort_store(&mut self) {

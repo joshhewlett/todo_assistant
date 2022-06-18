@@ -8,8 +8,7 @@ use todo::{todo_store::TodoStore, todo_item::TodoItem};
 
 fn main() {
 
-    // TODO: Init data from file
-
+    // These loops are probably not the best way to do this...
     loop {
         if let Err(e) = todo_assistant::run() {
             eprintln!("Error: {}", e);
@@ -17,6 +16,5 @@ fn main() {
                 eprintln!("Root cause: {}", e.root().as_ref().unwrap());
             }
         }
-        println!();
     }
 }

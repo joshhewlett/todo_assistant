@@ -91,28 +91,30 @@ pub fn run() -> Result<(), Box<TodoError>> {
     // Write data to file for each update
     // get_menu_action();
 
-    let store = TodoStore::new()?;
+    // TODO: Init data from file
+    let mut store = TodoStore::new()?;
 
-    print_menu();
+    loop {
+        print_menu();
 
-    let menu_item_selection = get_menu_action()?;
-    // println!("Selected: {}", menu_item_selection.name);
+        let menu_item_selection = get_menu_action()?;
+        // println!("Selected: {}", menu_item_selection.name);
 
-    match menu_item_selection.action {
-        MenuAction::List => { store.list_incomplete_todos(); }
-        MenuAction::Create => {}
-        MenuAction::Delete => {}
-        MenuAction::History => { store.list_history(); }
-        MenuAction::ListAll => { store.list_all_todos(); }
-        MenuAction::Quit => {
-            // TODO: Save state
-            println!("Goodbye.");
-            process::exit(0);
+        match menu_item_selection.action {
+            MenuAction::List => { store.list_incomplete_todos(); }
+            MenuAction::Create => { store.create_new_todo()?; }
+            MenuAction::Delete => {}
+            MenuAction::History => { store.list_history(); }
+            MenuAction::ListAll => { store.list_all_todos(); }
+            MenuAction::Quit => {
+                // TODO: Save state
+                println!("Goodbye.");
+                process::exit(0);
+            }
         }
+
+        println!();
     }
-
-
-    Ok(())
 }
 
 fn get_menu_action() -> Result<&'static MenuItem, TodoError> {

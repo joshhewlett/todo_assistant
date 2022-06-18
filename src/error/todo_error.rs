@@ -3,7 +3,7 @@ use std::fmt;
 
 #[derive(Debug)]
 pub struct TodoError {
-    message: String,
+    pub message: String,
     source: Option<Box<dyn Error>>
 }
 
