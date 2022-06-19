@@ -3,9 +3,6 @@ extern crate core;
 mod todo;
 mod error;
 
-use std::error::Error;
-use todo::{todo_store::TodoStore, todo_item::TodoItem};
-
 fn main() {
 
     // These loops are probably not the best way to do this...

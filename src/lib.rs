@@ -1,7 +1,4 @@
 use std::{fmt, io, process};
-use std::error::Error;
-use std::fmt::Pointer;
-use std::num::ParseIntError;
 use std::slice::Iter;
 
 mod error;
@@ -92,7 +89,7 @@ pub fn run() -> Result<(), Box<TodoError>> {
     // get_menu_action();
 
     // TODO: Init data from file
-    let mut store = TodoStore::new()?;
+    let mut store = TodoStore::new_from_persistence()?;
 
     loop {
         print_menu();

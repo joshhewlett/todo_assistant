@@ -1,0 +1,19 @@
+{
+  "store": [
+    {
+      "title": "Todo item one",
+      "due_date": "2021-01-01",
+      "complete": true
+    },
+    {
+      "title": "Todo item two",
+      "due_date": "2021-02-02",
+      "complete": false
+    },
+    {
+      "title": "Todo item three",
+      "due_date": "2021-03-03",
+      "complete": false
+    }
+  ]
+}
