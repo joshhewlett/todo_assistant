@@ -1,10 +1,17 @@
 use std::fmt;
-use chrono::{NaiveDate, format::ParseError, ParseResult};
+use chrono::{NaiveDate};
 use regex::Regex;
+use serde::{Serialize, Deserialize};
 use crate::error::todo_error::TodoError;
 
+#[derive(Debug, Serialize, Deserialize)]
+pub struct TodoItemSerializable {
+    pub title: String,
+    pub due_date: String,
+    pub complete: bool,
+}
+
 // TODO: Maybe add date_completed
-#[derive(Debug)]
 pub struct TodoItem {
     pub title: String,
     pub due_date: NaiveDate,
@@ -33,8 +40,26 @@ impl TodoItem {
         })
     }
 
+    pub fn deserialize(dto: TodoItemSerializable) -> Result<TodoItem, TodoError> {
+        let due_date = NaiveDate::parse_from_str(&dto.due_date, "%Y-%m-%d").unwrap();
+
+        Ok(TodoItem {
+            title: dto.title,
+            due_date,
+            complete: dto.complete,
+        })
+    }
+
     pub fn mark_as_done(&mut self) {
         self.complete = true;
+    }
+
+    pub fn to_serializable(&self) -> TodoItemSerializable {
+        TodoItemSerializable {
+            title: self.title.clone(),
+            due_date: self.due_date.to_string(),
+            complete: self.complete,
+        }
     }
 }
 
@@ -48,7 +73,6 @@ impl fmt::Display for TodoItem {
         write!(f, "| {} | {} | {}", is_done_indicator, self.due_date, self.title)
     }
 }
-
 
 #[cfg(test)]
 mod todoitem_new_tests {

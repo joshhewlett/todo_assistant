@@ -39,3 +39,20 @@ impl fmt::Display for TodoError {
         write!(f, "{}", self.message)
     }
 }
+
+#[cfg(test)]
+mod todo_error_tests {
+   use super::*;
+
+    #[test]
+    fn new_greenpath() {
+
+        let error = TodoError::new(
+            String::from("message"),
+            Box::new(TodoError::new_from_msg(String::from("source_message")))
+        );
+
+        assert_eq!("message", error.message);
+        assert_eq!("source_message", error.source.unwrap().to_string());
+    }
+}
