@@ -71,21 +71,33 @@ impl TodoStore {
         Ok(())
     }
 
-    pub fn mark_as_done(&mut self, index: usize) {
-        self.store[index].mark_as_done();
+    pub fn mark_as_done(&mut self) {
+        self.list_incomplete_todos();
+
+        println!("Enter the ID of the completed item:");
+        let mut completed_todo_id = String::new();
+        io::stdin().read_line(&mut completed_todo_id)
+            .map_err(|err| TodoError::new(
+                String::from("Failed to read line."),
+                Box::new(err)));
+
+        let completed_todo_id = completed_todo_id.parse::<usize>();
+
+
+        // self.store[index].mark_as_done();
         self.persist_data();
     }
 
-    pub fn list_all_todos(&self) {
-        self.print_store(|_| true);
+    pub fn list_all_todos(&self) -> Vec<&TodoItem> {
+        self.get_filtered_store(|_| true)
     }
 
-    pub fn list_incomplete_todos(&self) {
-        self.print_store(|item: &&TodoItem| !item.complete);
+    pub fn list_incomplete_todos(&self) -> Vec<&TodoItem> {
+        self.get_filtered_store(|item: &&TodoItem| !item.complete)
     }
 
-    pub fn list_history(&self) {
-        self.print_store(|item: &&TodoItem| item.complete);
+    pub fn list_history(&self) -> Vec<&TodoItem> {
+        self.get_filtered_store(|item: &&TodoItem| item.complete)
     }
 
     fn add_item(&mut self, new_item: TodoItem) {
@@ -119,19 +131,13 @@ impl TodoStore {
         persistence.write_all(store_dto_json.as_bytes()).unwrap();
     }
 
-    fn print_store<F>(&self, filter: F)
+    fn get_filtered_store<F>(&self, filter: F) -> Vec<&TodoItem>
         where
             F: FnMut(&&TodoItem) -> bool // TODO: Is a double reference necessary?
     {
-        let title_divider = String::from("-").repeat(self.longest_title_length + 1);
-
-        println!(" # | √ | Date due   | Title");
-        println!("---|---|------------|{}", title_divider);
-
-        for (i, val) in self.store.iter()
+        self.store.iter()
             .filter(filter)
-            .enumerate() {
-            println!(" {} {}", i, val);
-        }
+            .by_ref()
+            .collect()
     }
 }

@@ -1,81 +1,88 @@
 use std::{fmt, io, process};
+use std::collections::HashMap;
+use std::ops::Add;
 use std::slice::Iter;
 
 mod error;
-
-use error::todo_error::TodoError;
-// use crate::error::todo_error::TodoError;
-
 mod todo;
 
+use error::todo_error::TodoError;
 use todo::todo_store::TodoStore;
+use todo::todo_item::TodoItem;
 
 enum MenuAction {
-    List,
-    Create,
-    Delete,
-    History,
-    ListAll,
+    ListIncompleteItems,
+    CreateItem,
+    MarkItemComplete,
+    ListCompletedItems,
+    ListAllItems,
     Quit,
 }
 
 struct MenuItem {
     action: MenuAction,
-    name: &'static str,
-    selection: u8,
+    title: &'static str,
+    selection: char,
 }
 
 impl MenuItem {
     pub fn parse_user_selection(input: &String) -> Result<&'static MenuItem, TodoError> {
-        let input: u8 = input.trim().parse::<u8>()
+        let input: char = input.trim().parse::<char>()
             .map_err(|err| TodoError::new(
-                String::from("Selection must be a number."),
+                String::from("Input must be a single character."),
                 Box::new(err)))?;
 
-        MenuItem::iterator()
+        MENU_ITER.iter()
             .find(|menu_item| menu_item.selection == input)
             .ok_or(TodoError::new_from_msg(String::from("A valid menu action must be selected.")))
     }
-
-    pub fn iterator() -> Iter<'static, MenuItem> {
-        static MENU_ITEMS: [MenuItem; 6] = [
-            MenuItem {
-                action: MenuAction::List,
-                name: &"List incomplete items",
-                selection: 0,
-            },
-            MenuItem {
-                action: MenuAction::Create,
-                name: &"Create new item",
-                selection: 1,
-            },
-            MenuItem {
-                action: MenuAction::Delete,
-                name: &"Delete item",
-                selection: 2,
-            },
-            MenuItem {
-                action: MenuAction::History,
-                name: &"Show history",
-                selection: 3,
-            },
-            MenuItem {
-                action: MenuAction::ListAll,
-                name: &"List all items",
-                selection: 4,
-            },
-            MenuItem {
-                action: MenuAction::Quit,
-                name: &"Quit",
-                selection: 5,
-            }];
-        MENU_ITEMS.iter()
-    }
 }
+
+const MENU_ITER: [MenuItem; 6] = [
+    LIST_INCOMPLETE_ITEMS,
+    LIST_ALL_ITEMS,
+    LIST_COMPLETED_ITEMS,
+    CREATE_ITEM,
+    COMPLETE_ITEM,
+    QUIT
+];
+
+const LIST_INCOMPLETE_ITEMS: MenuItem = MenuItem {
+    action: MenuAction::ListIncompleteItems,
+    title: &"List [i]ncomplete items",
+    selection: 'i',
+};
+const LIST_ALL_ITEMS: MenuItem = MenuItem {
+    action: MenuAction::ListAllItems,
+    title: &"List [a]ll items",
+    selection: 'a',
+};
+const LIST_COMPLETED_ITEMS: MenuItem = MenuItem {
+    action: MenuAction::ListCompletedItems,
+    title: &"List completed items",
+    selection: 'h',
+};
+const CREATE_ITEM: MenuItem = MenuItem {
+    action: MenuAction::CreateItem,
+    title: &"Create [n]ew item",
+    selection: 'n',
+};
+const COMPLETE_ITEM: MenuItem = MenuItem {
+    action: MenuAction::MarkItemComplete,
+    title: &"[C]omplete item",
+    selection: 'c',
+};
+const QUIT: MenuItem = MenuItem {
+    action: MenuAction::Quit,
+    title: &"[Q]uit...",
+    selection: 'q',
+};
+
+const MENU_COLUMN_WIDTH: usize = 30; // Must be large than longest MenuAction.title
 
 impl fmt::Display for MenuItem {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{} - {}", self.selection, self.name)
+        write!(f, "{} - {}", self.selection, self.title)
     }
 }
 
@@ -88,7 +95,6 @@ pub fn run() -> Result<(), Box<TodoError>> {
     // Write data to file for each update
     // get_menu_action();
 
-    // TODO: Init data from file
     let mut store = TodoStore::new_from_persistence()?;
 
     loop {
@@ -98,11 +104,17 @@ pub fn run() -> Result<(), Box<TodoError>> {
         // println!("Selected: {}", menu_item_selection.name);
 
         match menu_item_selection.action {
-            MenuAction::List => { store.list_incomplete_todos(); }
-            MenuAction::Create => { store.create_new_todo()?; }
-            MenuAction::Delete => {}
-            MenuAction::History => { store.list_history(); }
-            MenuAction::ListAll => { store.list_all_todos(); }
+            MenuAction::ListIncompleteItems => {
+                print_store("Incomplete items", store.list_incomplete_todos());
+            }
+            MenuAction::ListAllItems => {
+                print_store("All items", store.list_all_todos());
+            }
+            MenuAction::ListCompletedItems => {
+                print_store("Completed items", store.list_history());
+            }
+            MenuAction::CreateItem => { store.create_new_todo()?; }
+            MenuAction::MarkItemComplete => { store.mark_as_done(); }
             MenuAction::Quit => {
                 // TODO: Save state
                 println!("Goodbye.");
@@ -125,6 +137,45 @@ fn get_menu_action() -> Result<&'static MenuItem, TodoError> {
 }
 
 fn print_menu() {
-    println!("Please select an action:");
-    MenuItem::iterator().for_each(|action| println!("{}", action));
+    println!("\nPlease select an action:");
+
+    let column_page_size = (MENU_ITER.len() / 2) + (MENU_ITER.len() % 2);
+
+    for i in 0..column_page_size {
+        let buffer_length = MENU_COLUMN_WIDTH - format!("{}", MENU_ITER[i]).len();
+        let buffer = String::from(" ").repeat(buffer_length);
+
+        let column_one_title = format!("{}", MENU_ITER[i]) + &buffer;
+        let column_two_title = MENU_ITER.get(i + column_page_size)
+            .map(|item| format!("{}", item))
+            .unwrap_or(String::from(""));
+
+        println!("{}{}", column_one_title, column_two_title);
+    }
+}
+
+fn print_store(data_title: &str, filtered_collection: Vec<&TodoItem>) {
+    let longest_title = filtered_collection.iter()
+        .map(|item| item.title.len())
+        .max().unwrap();
+
+    // TODO: Make this whole menu width problem dynamic. All you need is the header column data
+    //   and the data length
+    let title_divider = String::from("-").repeat(longest_title + 1);
+    let divider_line = format!("---|---|------------|{}", title_divider);
+
+    let title_buffer_left = String::from("=")
+        .repeat((divider_line.len() - data_title.len()) / 2);
+    let title_buffer_right = String::from(&title_buffer_left)
+        .add(String::from("=")
+            .repeat(((divider_line.len() - data_title.len()) / 2) % 2)
+            .as_str());
+
+    println!("{} {} {}", title_buffer_left, data_title, title_buffer_right);
+    println!(" # | √ | Date due   | Title");
+    println!("{}", divider_line);
+
+    for (i, val) in filtered_collection.iter().enumerate() {
+        println!(" {} {}", i, val);
+    }
 }
