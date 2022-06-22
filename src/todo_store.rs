@@ -92,9 +92,7 @@ impl TodoStore {
 
         // Complete specified item
         self.store.iter_mut()
-            .filter(|item| !item.complete)
-            .collect::<Vec<&mut TodoItem>>()
-            .get_mut(completed_todo_id)
+            .find(|item| item.id == completed_todo_id)
             .ok_or(TodoError::new_from_msg(String::from("Please select a valid ID.")))?
             .mark_as_done();
 
