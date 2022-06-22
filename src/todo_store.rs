@@ -3,20 +3,22 @@ use std::io;
 use std::io::{BufReader, Read, Write};
 use serde::{Serialize, Deserialize};
 
-use crate::todo::todo_item::{TodoItem, TodoItemSerializable};
-use crate::error::todo_error::TodoError;
+use crate::todo_item::{TodoItem, TodoItemSerializable};
+use crate::todo_error::TodoError;
 
 #[derive(Debug, Serialize, Deserialize)]
 struct TodoStoreSerializable {
     store: Vec<TodoItemSerializable>,
+    next_id: usize
 }
 
 pub struct TodoStore {
     store: Vec<TodoItem>,
+    next_id: usize,
     longest_title_length: usize,
 }
 
-static PERSISTENCE_STORE_FILENAME: &str = "todo_store_data.json";
+const PERSISTENCE_STORE_FILENAME: &str = "todo_store_data.json";
 
 impl TodoStore {
     pub fn new_from_persistence() -> Result<TodoStore, TodoError> {
@@ -52,14 +54,15 @@ impl TodoStore {
             });
 
         Ok(TodoStore {
+            next_id: store_dto.next_id,
             store: todo_items,
             longest_title_length,
         })
     }
 
     pub fn create_new_todo(&mut self) -> Result<(), TodoError> {
-        println!("Enter a new Todo Item:");
-        println!("Format: 'YYYY-MM-DD {{Title}}");
+        println!("Enter a new Todo Item or return to [m]enu:");
+        println!("Format: YYYY-MM-DD {{Title}}");
 
         let mut new_todo = String::new();
         io::stdin().read_line(&mut new_todo)
@@ -67,25 +70,37 @@ impl TodoStore {
                 String::from("Failed to read line."),
                 Box::new(err)))?;
 
-        self.add_item(TodoItem::new(new_todo)?);
+        self.add_item(TodoItem::new(new_todo, self.next_id)?);
         Ok(())
     }
 
-    pub fn mark_as_done(&mut self) {
-        self.list_incomplete_todos();
+    pub fn mark_as_done(&mut self) -> Result<(), TodoError> {
+        println!("Enter the ID of the completed item or return to [m]enu:");
 
-        println!("Enter the ID of the completed item:");
+        // Get user input
         let mut completed_todo_id = String::new();
         io::stdin().read_line(&mut completed_todo_id)
             .map_err(|err| TodoError::new(
                 String::from("Failed to read line."),
-                Box::new(err)));
+                Box::new(err)))?;
 
-        let completed_todo_id = completed_todo_id.parse::<usize>();
+        // Validate and parse ID
+        let completed_todo_id = completed_todo_id.trim().parse::<usize>()
+            .map_err(|err| TodoError::new(
+                String::from("Input must be an ID."),
+                Box::new(err)))?;
 
+        // Complete specified item
+        self.store.iter_mut()
+            .filter(|item| !item.complete)
+            .collect::<Vec<&mut TodoItem>>()
+            .get_mut(completed_todo_id)
+            .ok_or(TodoError::new_from_msg(String::from("Please select a valid ID.")))?
+            .mark_as_done();
 
-        // self.store[index].mark_as_done();
         self.persist_data();
+
+        Ok(())
     }
 
     pub fn list_all_todos(&self) -> Vec<&TodoItem> {
@@ -123,6 +138,7 @@ impl TodoStore {
             .collect();
 
         let store_dto = TodoStoreSerializable {
+            next_id: self.next_id,
             store
         };
 

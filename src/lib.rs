@@ -1,14 +1,14 @@
 use std::{fmt, io, process};
-use std::collections::HashMap;
 use std::ops::Add;
-use std::slice::Iter;
 
 mod error;
-mod todo;
+mod todo_store;
+mod todo_item;
+pub mod todo_error;
 
-use error::todo_error::TodoError;
-use todo::todo_store::TodoStore;
-use todo::todo_item::TodoItem;
+use todo_error::TodoError;
+use todo_store::TodoStore;
+use todo_item::TodoItem;
 
 enum MenuAction {
     ListIncompleteItems,
@@ -114,7 +114,10 @@ pub fn run() -> Result<(), Box<TodoError>> {
                 print_store("Completed items", store.list_history());
             }
             MenuAction::CreateItem => { store.create_new_todo()?; }
-            MenuAction::MarkItemComplete => { store.mark_as_done(); }
+            MenuAction::MarkItemComplete => {
+                print_store("Incomplete items", store.list_incomplete_todos());
+                store.mark_as_done()?;
+            }
             MenuAction::Quit => {
                 // TODO: Save state
                 println!("Goodbye.");
@@ -165,17 +168,19 @@ fn print_store(data_title: &str, filtered_collection: Vec<&TodoItem>) {
     let divider_line = format!("---|---|------------|{}", title_divider);
 
     let title_buffer_left = String::from("=")
-        .repeat((divider_line.len() - data_title.len()) / 2);
+        .repeat((divider_line.len() - (data_title.len() + 2)) / 2);
+    let right_buffer_add = if (divider_line.len() - (data_title.len() + 2)) % 2 == 0 {
+        ""
+    } else {
+        "="
+    };
+
     let title_buffer_right = String::from(&title_buffer_left)
-        .add(String::from("=")
-            .repeat(((divider_line.len() - data_title.len()) / 2) % 2)
-            .as_str());
+        .add(right_buffer_add);
 
     println!("{} {} {}", title_buffer_left, data_title, title_buffer_right);
     println!(" # | √ | Date due   | Title");
     println!("{}", divider_line);
 
-    for (i, val) in filtered_collection.iter().enumerate() {
-        println!(" {} {}", i, val);
-    }
+    filtered_collection.iter().for_each(|item| println!("{}", item));
 }

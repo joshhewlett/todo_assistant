@@ -1,11 +1,10 @@
 extern crate core;
 
-mod todo;
-mod error;
+mod todo_error;
 
 fn main() {
 
-    // These loops are probably not the best way to do this...
+    // TODO: These loops are probably not the best way to do this...
     loop {
         if let Err(e) = todo_assistant::run() {
             eprintln!("Error: {}", e);
