@@ -2,13 +2,11 @@ use std::{fmt, io, process};
 use std::ops::Add;
 
 mod error;
-mod todo_store;
-mod todo_item;
-pub mod todo_error;
+mod todo;
 
-use todo_error::TodoError;
-use todo_store::TodoStore;
-use todo_item::TodoItem;
+use todo::store::TodoStore;
+use todo::item::TodoItem;
+use error::TodoError;
 
 enum MenuAction {
     ListIncompleteItems,

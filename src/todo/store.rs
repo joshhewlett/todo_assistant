@@ -3,8 +3,8 @@ use std::io;
 use std::io::{BufReader, Read, Write};
 use serde::{Serialize, Deserialize};
 
-use crate::todo_item::{TodoItem, TodoItemSerializable};
-use crate::todo_error::TodoError;
+use crate::todo::item::{TodoItem, TodoItemSerializable};
+use crate::error::TodoError;
 
 #[derive(Debug, Serialize, Deserialize)]
 struct TodoStoreSerializable {

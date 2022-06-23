@@ -1,6 +1,6 @@
 extern crate core;
 
-mod todo_error;
+mod error;
 
 fn main() {
 

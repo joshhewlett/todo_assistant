@@ -2,7 +2,7 @@ use std::fmt;
 use chrono::{NaiveDate};
 use regex::Regex;
 use serde::{Serialize, Deserialize};
-use crate::todo_error::TodoError;
+use crate::error::TodoError;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct TodoItemSerializable {
