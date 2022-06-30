@@ -1,13 +1,12 @@
 use std::{fmt, io, process};
-use std::ops::Add;
 
-mod error;
+mod err;
 mod todo;
 
-use todo::store::TodoStore;
-use todo::item::TodoItem;
-use error::TodoError;
+use err::TodoError;
+use todo::{TodoItem, TodoStore};
 
+// TODO: Fix deserialization error loop
 enum MenuAction {
     ListIncompleteItems,
     CreateItem,
@@ -25,14 +24,19 @@ struct MenuItem {
 
 impl MenuItem {
     pub fn parse_user_selection(input: &String) -> Result<&'static MenuItem, TodoError> {
-        let input: char = input.trim().parse::<char>()
-            .map_err(|err| TodoError::new(
+        let input: char = input.trim().parse::<char>().map_err(|err| {
+            TodoError::new(
                 String::from("Input must be a single character."),
-                Box::new(err)))?;
+                Box::new(err),
+            )
+        })?;
 
-        MENU_ITER.iter()
+        MENU_ITER
+            .iter()
             .find(|menu_item| menu_item.selection == input)
-            .ok_or(TodoError::new_from_msg(String::from("A valid menu action must be selected.")))
+            .ok_or(TodoError::new_from_msg(String::from(
+                "A valid menu action must be selected.",
+            )))
     }
 }
 
@@ -42,7 +46,7 @@ const MENU_ITER: [MenuItem; 6] = [
     LIST_COMPLETED_ITEMS,
     CREATE_ITEM,
     COMPLETE_ITEM,
-    QUIT
+    QUIT,
 ];
 
 const LIST_INCOMPLETE_ITEMS: MenuItem = MenuItem {
@@ -85,7 +89,6 @@ impl fmt::Display for MenuItem {
 }
 
 pub fn run() -> Result<(), Box<TodoError>> {
-
     // Show user menu
     // Ask user for input
     // Env var for default open behavior?
@@ -103,24 +106,26 @@ pub fn run() -> Result<(), Box<TodoError>> {
 
         match menu_item_selection.action {
             MenuAction::ListIncompleteItems => {
-                print_store("Incomplete items", store.list_incomplete_todos());
-            }
+                todo::print_store("Incomplete items", &store.list_incomplete_todos());
+            },
             MenuAction::ListAllItems => {
-                print_store("All items", store.list_all_todos());
-            }
+                todo::print_store("All items", &store.list_all_todos());
+            },
             MenuAction::ListCompletedItems => {
-                print_store("Completed items", store.list_history());
-            }
-            MenuAction::CreateItem => { store.create_new_todo()?; }
+                todo::print_store("Completed items", &store.list_history());
+            },
+            MenuAction::CreateItem => {
+                store.create_new_todo()?;
+            },
             MenuAction::MarkItemComplete => {
-                print_store("Incomplete items", store.list_incomplete_todos());
+                todo::print_store("Incomplete items", &store.list_incomplete_todos());
                 store.mark_as_done()?;
-            }
+            },
             MenuAction::Quit => {
                 // TODO: Save state
                 println!("Goodbye.");
                 process::exit(0);
-            }
+            },
         }
 
         println!();
@@ -129,10 +134,9 @@ pub fn run() -> Result<(), Box<TodoError>> {
 
 fn get_menu_action() -> Result<&'static MenuItem, TodoError> {
     let mut user_selection = String::new();
-    io::stdin().read_line(&mut user_selection)
-        .map_err(|err| TodoError::new(
-            String::from("Failed to read line."),
-            Box::new(err)))?;
+    io::stdin()
+        .read_line(&mut user_selection)
+        .map_err(|err| TodoError::new(String::from("Failed to read line."), Box::new(err)))?;
 
     MenuItem::parse_user_selection(&user_selection)
 }
@@ -147,38 +151,11 @@ fn print_menu() {
         let buffer = String::from(" ").repeat(buffer_length);
 
         let column_one_title = format!("{}", MENU_ITER[i]) + &buffer;
-        let column_two_title = MENU_ITER.get(i + column_page_size)
+        let column_two_title = MENU_ITER
+            .get(i + column_page_size)
             .map(|item| format!("{}", item))
             .unwrap_or(String::from(""));
 
         println!("{}{}", column_one_title, column_two_title);
     }
-}
-
-fn print_store(data_title: &str, filtered_collection: Vec<&TodoItem>) {
-    let longest_title = filtered_collection.iter()
-        .map(|item| item.title.len())
-        .max().unwrap();
-
-    // TODO: Make this whole menu width problem dynamic. All you need is the header column data
-    //   and the data length
-    let title_divider = String::from("-").repeat(longest_title + 1);
-    let divider_line = format!("---|---|------------|{}", title_divider);
-
-    let title_buffer_left = String::from("=")
-        .repeat((divider_line.len() - (data_title.len() + 2)) / 2);
-    let right_buffer_add = if (divider_line.len() - (data_title.len() + 2)) % 2 == 0 {
-        ""
-    } else {
-        "="
-    };
-
-    let title_buffer_right = String::from(&title_buffer_left)
-        .add(right_buffer_add);
-
-    println!("{} {} {}", title_buffer_left, data_title, title_buffer_right);
-    println!(" # | √ | Date due   | Title");
-    println!("{}", divider_line);
-
-    filtered_collection.iter().for_each(|item| println!("{}", item));
 }

@@ -7,7 +7,6 @@ pub struct TodoError {
     source: Option<Box<dyn Error>>,
 }
 
-#[allow(dead_code)]
 impl TodoError {
     pub fn new(message: String, source: Box<(dyn Error)>) -> TodoError {
         TodoError {

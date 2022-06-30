@@ -1,8 +1,8 @@
-use std::fmt;
-use chrono::{NaiveDate};
+use crate::err::TodoError;
+use chrono::NaiveDate;
 use regex::Regex;
-use serde::{Serialize, Deserialize};
-use crate::error::TodoError;
+use serde::{Deserialize, Serialize};
+use std::fmt;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct TodoItemSerializable {
@@ -26,7 +26,9 @@ impl TodoItem {
         let regex = Regex::new(regex_pattern).unwrap();
 
         if !regex.is_match(&args.trim()) {
-            return Err(TodoError::new_from_msg(String::from("Invalid format for new Todo item.")));
+            return Err(TodoError::new_from_msg(String::from(
+                "Invalid format for new Todo item.",
+            )));
         }
 
         let captures = regex.captures(&args.trim()).unwrap();
@@ -43,7 +45,7 @@ impl TodoItem {
         })
     }
 
-    pub fn deserialize(dto: TodoItemSerializable) -> Result<TodoItem, TodoError> {
+    pub fn deserialize(dto: TodoItemSerializable) -> Result<Self, TodoError> {
         let due_date = NaiveDate::parse_from_str(&dto.due_date, "%Y-%m-%d").unwrap();
 
         Ok(TodoItem {
@@ -57,13 +59,15 @@ impl TodoItem {
     pub fn mark_as_done(&mut self) {
         self.complete = true;
     }
+}
 
-    pub fn to_serializable(&self) -> TodoItemSerializable {
+impl From<&TodoItem> for TodoItemSerializable {
+    fn from(item: &TodoItem) -> Self {
         TodoItemSerializable {
-            id: self.id,
-            title: self.title.clone(),
-            due_date: self.due_date.to_string(),
-            complete: self.complete,
+            id: item.id,
+            title: item.title.clone(),
+            due_date: item.due_date.to_string(),
+            complete: item.complete,
         }
     }
 }
@@ -72,10 +76,14 @@ impl fmt::Display for TodoItem {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let is_done_indicator = match self.complete {
             true => String::from("X"),
-            false => String::from(" ")
+            false => String::from(" "),
         };
 
-        write!(f, " {} | {} | {} | {}", self.id, is_done_indicator, self.due_date, self.title)
+        write!(
+            f,
+            " {} | {} | {} | {}",
+            self.id, is_done_indicator, self.due_date, self.title
+        )
     }
 }
 
@@ -115,7 +123,8 @@ mod todoitem_new_tests {
 
     #[test]
     fn bad_input_too_long() {
-        let user_input = String::from("2022-01-01 Todo Item") + String::from("0").repeat(50).as_str();
+        let user_input =
+            String::from("2022-01-01 Todo Item") + String::from("0").repeat(50).as_str();
         let error = TodoItem::new(String::from(user_input), 0).err().unwrap();
 
         assert_eq!("Invalid format for new Todo item.", &error.message);
