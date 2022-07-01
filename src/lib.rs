@@ -1,7 +1,7 @@
 use std::{fmt, io, process};
 
-mod err;
-mod todo;
+pub mod err;
+pub mod todo;
 
 use err::TodoError;
 use todo::{TodoItem, TodoStore};
@@ -88,7 +88,7 @@ impl fmt::Display for MenuItem {
     }
 }
 
-pub fn run() -> Result<(), Box<TodoError>> {
+pub fn run(store: &mut TodoStore) -> Result<(), Box<TodoError>> {
     // Show user menu
     // Ask user for input
     // Env var for default open behavior?
@@ -96,40 +96,37 @@ pub fn run() -> Result<(), Box<TodoError>> {
     // Write data to file for each update
     // get_menu_action();
 
-    let mut store = TodoStore::new_from_persistence()?;
+    print_menu();
 
-    loop {
-        print_menu();
+    let menu_item_selection = get_menu_action()?;
+    // println!("Selected: {}", menu_item_selection.name);
 
-        let menu_item_selection = get_menu_action()?;
-        // println!("Selected: {}", menu_item_selection.name);
-
-        match menu_item_selection.action {
-            MenuAction::ListIncompleteItems => {
-                todo::print_store("Incomplete items", &store.list_incomplete_todos());
-            },
-            MenuAction::ListAllItems => {
-                todo::print_store("All items", &store.list_all_todos());
-            },
-            MenuAction::ListCompletedItems => {
-                todo::print_store("Completed items", &store.list_history());
-            },
-            MenuAction::CreateItem => {
-                store.create_new_todo()?;
-            },
-            MenuAction::MarkItemComplete => {
-                todo::print_store("Incomplete items", &store.list_incomplete_todos());
-                store.mark_as_done()?;
-            },
-            MenuAction::Quit => {
-                // TODO: Save state
-                println!("Goodbye.");
-                process::exit(0);
-            },
+    match menu_item_selection.action {
+        MenuAction::ListIncompleteItems => {
+            todo::print_store("Incomplete items", &store.list_incomplete_todos());
         }
-
-        println!();
+        MenuAction::ListAllItems => {
+            todo::print_store("All items", &store.list_all_todos());
+        }
+        MenuAction::ListCompletedItems => {
+            todo::print_store("Completed items", &store.list_history());
+        }
+        MenuAction::CreateItem => {
+            store.create_new_todo()?;
+        }
+        MenuAction::MarkItemComplete => {
+            todo::print_store("Incomplete items", &store.list_incomplete_todos());
+            store.mark_as_done()?;
+        }
+        MenuAction::Quit => {
+            // TODO: Save state
+            println!("Goodbye.");
+            process::exit(0);
+        }
     }
+    println!();
+
+    Ok(())
 }
 
 fn get_menu_action() -> Result<&'static MenuItem, TodoError> {

@@ -16,19 +16,17 @@ pub mod todo_store {
     pub struct TodoStore {
         store: Vec<TodoItem>,
         next_id: usize,
-        longest_title_length: usize,
+        persistence_filepath: String
     }
 
-    const PERSISTENCE_STORE_FILENAME: &str = "todo_store_data.json";
-
     impl TodoStore {
-        pub fn new_from_persistence() -> Result<TodoStore, TodoError> {
+        pub fn new_from_persistence(filepath: &str) -> Result<TodoStore, TodoError> {
             // Open and read persistence store file contents
             let persistence_store = File::options()
                 .read(true)
                 .create(true)
                 .write(true)
-                .open(PERSISTENCE_STORE_FILENAME)
+                .open(filepath)
                 .unwrap();
 
             let mut persistence_store_contents = String::new();
@@ -63,7 +61,7 @@ pub mod todo_store {
             Ok(TodoStore {
                 next_id: store_dto.next_id,
                 store: todo_items,
-                longest_title_length,
+                persistence_filepath: String::from(filepath)
             })
         }
 
@@ -96,7 +94,7 @@ pub mod todo_store {
                 TodoError::new(String::from("Input must be an ID."), Box::new(err))
             })?;
 
-            // Complete specified item
+            // Mark specified item as complete
             self.store
                 .iter_mut()
                 .find(|item| item.id == completed_todo_id)
@@ -123,9 +121,6 @@ pub mod todo_store {
         }
 
         fn add_item(&mut self, new_item: TodoItem) {
-            if new_item.title.len() > self.longest_title_length {
-                self.longest_title_length = new_item.title.len();
-            }
 
             self.store.push(new_item);
             self.sort_store();
@@ -149,7 +144,7 @@ pub mod todo_store {
             };
 
             let store_dto_json = serde_json::to_string_pretty(&store_dto).unwrap();
-            let mut persistence = File::create(PERSISTENCE_STORE_FILENAME).unwrap();
+            let mut persistence = File::create(&self.persistence_filepath).unwrap();
             persistence.write_all(store_dto_json.as_bytes()).unwrap();
         }
 
@@ -206,8 +201,8 @@ pub mod todo_printer {
                 "√",
                 Justification::Left,
                 Box::new(|item| match item.complete {
-                    true => String::from(" "),
-                    false => String::from("X"),
+                    true => String::from("X"),
+                    false => String::from(" "),
                 }),
             ),
             TableColumn::new(
@@ -275,12 +270,12 @@ pub mod todo_printer {
         // a divider with the length of the column
         columns.iter().for_each(|column| {
             let header_right_padding_char_count = column.width - column.header.chars().count();
-            &header_cells.push(format!(
+            header_cells.push(format!(
                 " {}{} ",
                 column.header,
                 String::from(" ").repeat(header_right_padding_char_count)
             ));
-            &divider_cells.push(format!("-{}-", String::from("-").repeat(column.width)));
+            divider_cells.push(format!("-{}-", String::from("-").repeat(column.width)));
         });
 
         // Print out all cells separated by a pipe
