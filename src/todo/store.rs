@@ -68,6 +68,8 @@ pub mod todo_store {
         pub fn create_new_todo(&mut self) -> Result<(), TodoError> {
             println!("Enter a new Todo Item or return to [m]enu:");
             println!("Format: YYYY-MM-DD {{Title}}");
+            print!("> ");
+            io::stdout().flush().unwrap();
 
             let mut new_todo = String::new();
             io::stdin().read_line(&mut new_todo).map_err(|err| {
@@ -80,6 +82,8 @@ pub mod todo_store {
 
         pub fn mark_as_done(&mut self) -> Result<(), TodoError> {
             println!("Enter the ID of the completed item or return to [m]enu:");
+            print!("> ");
+            io::stdout().flush().unwrap();
 
             // Get user input
             let mut completed_todo_id = String::new();
@@ -124,6 +128,7 @@ pub mod todo_store {
 
             self.store.push(new_item);
             self.sort_store();
+            self.next_id += 1;
             self.persist_data();
         }
 

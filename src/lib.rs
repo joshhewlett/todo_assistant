@@ -1,4 +1,5 @@
 use std::{fmt, io, process};
+use std::io::Write;
 
 pub mod err;
 pub mod todo;
@@ -61,7 +62,7 @@ const LIST_ALL_ITEMS: MenuItem = MenuItem {
 };
 const LIST_COMPLETED_ITEMS: MenuItem = MenuItem {
     action: MenuAction::ListCompletedItems,
-    title: &"List completed items",
+    title: &"List [h]istory",
     selection: 'h',
 };
 const CREATE_ITEM: MenuItem = MenuItem {
@@ -130,6 +131,9 @@ pub fn run(store: &mut TodoStore) -> Result<(), Box<TodoError>> {
 }
 
 fn get_menu_action() -> Result<&'static MenuItem, TodoError> {
+    print!("> ");
+    io::stdout().flush().unwrap();
+
     let mut user_selection = String::new();
     io::stdin()
         .read_line(&mut user_selection)
